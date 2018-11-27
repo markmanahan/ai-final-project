@@ -17,7 +17,8 @@ from collections import namedtuple
 from operator import add
 from random import *
 import numpy as np
-import reflex
+import QLearning
+
 
 EntityInfo = namedtuple('EntityInfo', 'x, y, z, name')
 
@@ -85,7 +86,7 @@ def safeStartMission(agent_host, my_mission, my_client_pool, my_mission_record, 
                     print("Will wait and retry.", max_attempts - used_attempts, "attempts left.")
                     time.sleep(2)
             else:
-                print("Other error:", e.message)
+                print("Other error:", MalmoPython.MissionExceptionDetails.message)
                 print("Waiting will not help here - bailing immediately.")
                 exit(1)
         if used_attempts == max_attempts:
@@ -196,7 +197,7 @@ def getXML(reset):
               <ServerSection>
                 <ServerHandlers>
                   <FlatWorldGenerator generatorString="3;7,44*49,73,35:1,159:4,95:13,35:13,159:11,95:10,159:14,159:6,35:6,95:6;12;"/>
-                  <ServerQuitFromTimeUp timeLimitMs="1000000"/>
+                  <ServerQuitFromTimeUp timeLimitMs="10000"/>
                   <ServerQuitWhenAnyAgentFinishes/>
                 </ServerHandlers>
               </ServerSection>
@@ -205,6 +206,7 @@ def getXML(reset):
                 <AgentStart> '''   + GenPlayerStart(pStart['x'], pStart['z']) +  ''' </AgentStart>
                 <AgentHandlers>
                   <DiscreteMovementCommands/>
+                  <MissionQuitCommands/>
                   <ObservationFromFullStats/>
                   <ObservationFromGrid>
                       <Grid name="floor3x3W">
@@ -226,7 +228,17 @@ def getXML(reset):
                 </AgentStart>
                 <AgentHandlers>
                   <DiscreteMovementCommands/>
+                  <MissionQuitCommands/>
                   <ObservationFromFullStats/>
+
+                  <RewardForTouchingBlockType>
+                    <Block reward="-100.0" type="water" behaviour="onceOnly"/>
+                    <Block reward="100.0" type="lit_redstone_ore" behaviour="onceOnly"/>
+                  </RewardForTouchingBlockType>
+                    <RewardForSendingCommand reward="-1" />
+
+
+
                   <ObservationFromGrid>
                       <Grid name="floor3x3W">
                         <min x="-1" y="0" z="-1"/>
@@ -250,90 +262,57 @@ for x in range(10000, 10000 + NUM_AGENTS + 1):
 
 print("Running mission")
 # Create mission xml - use forcereset if this is the first mission.
-my_mission = MalmoPython.MissionSpec(getXML("true"), True)
 
 experimentID = str(uuid.uuid4())
 
-for i in range(len(agent_hosts)):
-    safeStartMission(agent_hosts[i], my_mission, client_pool, MalmoPython.MissionRecordSpec(), i, experimentID)
-
-safeWaitForStart(agent_hosts)
 
 time.sleep(1)
 running = True
 
 current_pos = [(0,0) for x in range(NUM_AGENTS)]
 # When an agent is killed, it stops getting observations etc. Track this, so we know when to bail.
+my_mission = MalmoPython.MissionSpec(getXML("true"), True)
+agents = QLearning.TabQAgent()
+
+
 
 timed_out = False
-g_score = 0
 
 # Main mission loop
-while not timed_out and food:
-    print('global score:', g_score)
 
-    for i in range(NUM_AGENTS):
-        ah = agent_hosts[i]
-        world_state = ah.getWorldState()
-        if world_state.is_mission_running == False:
-            timed_out = True
-        if world_state.is_mission_running and world_state.number_of_observations_since_last_state > 0:
-            msg = world_state.observations[-1].text
-            ob = json.loads(msg)
+num_repeats = 10
+cum_reward = 0
 
-            if "XPos" in ob and "ZPos" in ob:
-                current_pos[i] = (ob[u'XPos'], ob[u'ZPos'])
-                print("First pos ", current_pos[i])
-                #print(current_pos[i])
-            if ob['Name'] == 'Enemy':
-                print('enemy moving:')
-                reflex.enemyAgentMoveRand(ah, world_state)
-                ah = agent_hosts[i]
-                world_state = ah.getWorldState()
-                if world_state.is_mission_running and world_state.number_of_observations_since_last_state > 0:
-                    msg = world_state.observations[-1].text
-                    ob = json.loads(msg)
-                if "XPos" in ob and "ZPos" in ob:
-                    current_pos[i] = (ob[u'XPos'], ob[u'ZPos'])
-                    print("Second pos ", current_pos[i])
-                eCurr['x'] = current_pos[i][0]
-                eCurr['z'] = current_pos[i][1]
-                if (current_pos[i] == (pCurr['x'], pCurr['z'])):
-                    g_score -= 100
-                    timed_out = True
-                    break
-                time.sleep(0.1)
-            if ob['Name'] == 'Player':
-                if (current_pos[i] == (eCurr['x'], eCurr['z'])):
-                    g_score -= 100
-                    timed_out = True
-                    break
 
-                print('agent moving')
-                reflex.reflexAgentMove(ah, current_pos[i], world_state, food, (eCurr['x'], eCurr['z']))
-                ah = agent_hosts[i]
-                world_state = ah.getWorldState()
-                if world_state.is_mission_running and world_state.number_of_observations_since_last_state > 0:
-                    msg = world_state.observations[-1].text
-                    ob = json.loads(msg)
-                if "XPos" in ob and "ZPos" in ob:
-                    current_pos[i] = (ob[u'XPos'], ob[u'ZPos'])
-                    print("Second pos ", current_pos[i])
-                if ((current_pos[i][0] - 0.5, current_pos[i][1] - 0.5) in food):
-                    print("Food found!")
-                    food.remove((current_pos[i][0] - 0.5, current_pos[i][1] - 0.5))
-                    g_score += 10
-                if (current_pos[i] == (eCurr['x'], eCurr['z'])):
-                    g_score -= 100
-                    timed_out = True
-                    break
-                #g_score -= 1
-                pCurr['x'] = current_pos[i][0]
-                pCurr['z'] = current_pos[i][1]
 
-    time.sleep(0.05)
-print(food)
-print(g_score)
+for i in range(num_repeats):
+
+    my_mission_record = MalmoPython.MissionRecordSpec()
+
+    for j in range(len(agent_hosts)):
+        safeStartMission(agent_hosts[j], my_mission, client_pool, my_mission_record, j, experimentID)
+
+    safeWaitForStart(agent_hosts)
+
+
+    print('Repeat %d of %d' % (i + 1, num_repeats))
+
+    #ah = agent_hosts[i]
+    cum_reward += agents.run(agent_hosts[0], agent_hosts[1])
+
+    #while not timed_out:
+
+    ws = agent_hosts[-1].getWorldState()
+    while ws.is_mission_running:
+        agent_hosts[-1].sendCommand("quit")
+        time.sleep(1)
+        print('waiting..\n')
+        ws = agent_hosts[-1].getWorldState()
+
+     #   pass
+
+
+
 
 print("Waiting for mission to end ", end=' ')
 # Mission should have ended already, but we want to wait until all the various agent hosts
