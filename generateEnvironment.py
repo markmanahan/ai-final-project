@@ -145,12 +145,11 @@ def GenEnemyStart(x, z):
     return '<Placement x="' + str(x + 0.5) + '" y="56" z="' + str(z + 0.5) + '" yaw="0"/>'
 
 pStart = {'x': 0, 'z': 0}
-eStart = {'x': 0, 'z': 0}
+eStart = {'x': 2, 'z': 2}
 
 pCurr = {'x': 0, 'z': 0}
 eCurr = {'x': 0, 'z': 0}
 
-food = []
 
 def mazeCreator():
     genstring = ""
@@ -184,10 +183,12 @@ def mazeCreator():
 def invMake():
     xml = ""
     for i in range(0, 39):
-        xml += '<InventoryObject type="diamond_axe" slot="' + str(i) + '" quantity="1"/>'
+        xml += '<InventoryObject type="iron_sword" slot="0" quantity="1"/><InventoryObject type="potion">'
     return(xml)
 
 def getXML(reset):
+    ARENA_WIDTH = 20
+    ARENA_BREADTH = 20
     # Set up the Mission XML:
     xml = '''<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
             <Mission xmlns="http://ProjectMalmo.microsoft.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -203,9 +204,14 @@ def getXML(reset):
               </ServerSection>
               <AgentSection mode="Survival">
                 <Name>Player</Name>
-                <AgentStart> '''   + GenPlayerStart(pStart['x'], pStart['z']) +  ''' </AgentStart>
+                <AgentStart> '''   + GenPlayerStart(pStart['x'], pStart['z']) +  '''
+
+                <Inventory><InventoryItem type="iron_sword" slot="0" quantity="1"/></Inventory>
+                </AgentStart>
                 <AgentHandlers>
-                  <DiscreteMovementCommands/>
+                  <ChatCommands/>
+                <ContinuousMovementCommands turnSpeedDegs="420"/>
+                <ObservationFromRay/>
                   <MissionQuitCommands/>
                   <ObservationFromFullStats/>
                   <ObservationFromGrid>
@@ -224,12 +230,17 @@ def getXML(reset):
                 <Name>Enemy</Name>
                 <AgentStart> 
                 '''   + GenEnemyStart(eStart['x'], eStart['z']) +  ''' 
-                <Inventory>''' + invMake() + '''</Inventory>
+                <Inventory><InventoryItem type="iron_sword" slot="0" quantity="1"/></Inventory>
                 </AgentStart>
                 <AgentHandlers>
-                  <DiscreteMovementCommands/>
+                <ChatCommands/>
+                  <ContinuousMovementCommands turnSpeedDegs="420"/>
+                  <ObservationFromRay/>
                   <MissionQuitCommands/>
                   <ObservationFromFullStats/>
+                  <ObservationFromNearbyEntities>
+                    <Range name="entities" xrange="'''+str(ARENA_WIDTH)+'''" yrange="2" zrange="'''+str(ARENA_BREADTH)+'''" />
+                  </ObservationFromNearbyEntities>
 
                   <RewardForTouchingBlockType>
                     <Block reward="-100.0" type="water" behaviour="onceOnly"/>
@@ -280,8 +291,8 @@ timed_out = False
 
 # Main mission loop
 
-num_repeats = 10
-cum_reward = 0
+num_repeats = 3
+cumulative_reward = 0
 
 
 
@@ -294,11 +305,12 @@ for i in range(num_repeats):
 
     safeWaitForStart(agent_hosts)
 
-
     print('Repeat %d of %d' % (i + 1, num_repeats))
+    agent_hosts[0].sendCommand("chat /give @a minecraft:potion 1 0 {Potion:minecraft:healing}")
+    agent_hosts[0].sendCommand("chat /replaceitem entity @a slot.weapon.offhand minecraft:shield")
 
     #ah = agent_hosts[i]
-    cum_reward += agents.run(agent_hosts[0], agent_hosts[1])
+    cumulative_reward += agents.run(agent_hosts[0], agent_hosts[1])
 
     #while not timed_out:
 

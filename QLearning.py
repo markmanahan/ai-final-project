@@ -12,6 +12,7 @@ import os
 import random
 import sys
 import time
+import itertools
 #from numpy import argmax
 
 if sys.version_info[0] == 2:
@@ -37,7 +38,15 @@ class TabQAgent(object):
         self.logger.handlers = []
         self.logger.addHandler(logging.StreamHandler(sys.stdout))
 
-        self.actions = ["movenorth 1", "movesouth 1", "movewest 1", "moveeast 1"]
+
+        self.movementActions = ["move 0", "move 1", "move -1", "strafe 1", "strafe -1"]
+        self.turnSpeed = ["turn 0", "turn 0.33", "turn 0.66", "turn 1", "turn -0.33", "turn -0.66", "turn -1"]
+        self.hotkeyChoice = ["hotbar.1 1", "hotbar.2 1"] #Ben: Might be bugged
+        self.mouseAction = ["attack 1", "use 1"]
+        #self.directions = ["setYaw 0", "setYaw 30", "setYaw 60", "setYaw 90", "setYaw 120"]
+
+        self.actions = list(itertools.product(self.movementActions, self.turnSpeed, self.hotkeyChoice, self.mouseAction)) #total number of actions: 140
+        print("size of actions: ", len(self.actions))
         self.q_table = {}
         self.canvas = None
         self.root = None
@@ -56,6 +65,7 @@ class TabQAgent(object):
     def updateQTableFromTerminatingState(self, reward, prev_state, prev_a):
         self.q_table[prev_state][prev_a] = reward
         return
+
     def act(self, world_state, agent_host, current_r):
         obs_text = world_state.observations[-1].text
         obs = json.loads(obs_text)  # most recent observation
@@ -63,6 +73,9 @@ class TabQAgent(object):
         if not u'XPos' in obs or not u'ZPos' in obs:
             self.logger.error("Incomplete observation received: %s" % obs_text)
             return 0
+
+        #current_s needs to be changed to include,
+
         current_s = "%d:%d" % (int(obs[u'XPos']), int(obs[u'ZPos']))
         self.logger.debug("State: %s (x = %.2f, z = %.2f)" % (current_s, float(obs[u'XPos']), float(obs[u'ZPos'])))
         if current_s not in self.q_table:
@@ -76,9 +89,9 @@ class TabQAgent(object):
 
         # select the next action (find a s.t. self.actions[a] == next action)
         if random.random() <= self.epsilon:
-            next_action = random.choice([0,1,2,3])
+            next_action = random.choice(range(140))
         else:
-            print(self.q_table[current_s])
+            #print(self.q_table[current_s])
             maxExp = max(self.q_table[current_s])
             print("max is ",maxExp)
             bestResults = []
@@ -86,13 +99,15 @@ class TabQAgent(object):
                 if self.q_table[current_s][i] == maxExp:
                     bestResults.append(i)
             next_action = random.choice(bestResults)
+
             print(next_action)
             print(self.actions[next_action])
 
 
 
         # try to send the selected action to agent, only update prev_s if this succeeds
-        agent_host.sendCommand(self.actions[next_action])
+        for command in self.actions[next_action]:
+            agent_host.sendCommand(command)
         self.prev_s = current_s
         self.prev_a = next_action
 
@@ -157,7 +172,11 @@ class TabQAgent(object):
             print("here!\n")
             msg = state1.observations[-1].text
             ob = json.loads(msg)
-
+        elif state1.is_mission_running:
+            state1 = agent_host1.getWorldState()
+            while state1.number_of_observations_since_last_state == 0:
+                print("waiting..")
+                sleep(1)
 
         if(ob['Name'] == 'Player'):
             player = agent_host0
@@ -179,6 +198,7 @@ class TabQAgent(object):
                 self.logger.error("Error: %s" % error.text)
             for reward in player_state.rewards:
                 current_r += reward.getValue()
+                print("current_r ", current_r)
             if player_state.is_mission_running and len(player_state.observations) > 0 and not \
             player_state.observations[-1].text == "{}":
                 total_reward += self.act(player_state, player, current_r)
@@ -227,9 +247,6 @@ class TabQAgent(object):
         # update Q values
         if self.prev_s is not None and self.prev_a is not None:
             self.updateQTableFromTerminatingState(current_r, self.prev_s, self.prev_a)
-
-        # used to dynamically draw the QTable in a separate window
-        #self.drawQ()
 
 
         return 0
