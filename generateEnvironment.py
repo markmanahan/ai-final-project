@@ -170,7 +170,6 @@ def mazeCreator():
 
             elif level_mat[i][j] == ".":
                 genstring += GenBlock(i, 55, j, "glowstone") + "\n"
-                food.append((i, j))
 
             elif level_mat[i][j] == "G":
                 eStart['x'] = i
@@ -224,6 +223,7 @@ def getXML(reset):
                         <max x="1" y="-1" z="1"/>
                       </Grid>
                   </ObservationFromGrid>
+                  <RewardForSendingCommand reward="-1" />
                 </AgentHandlers>
               </AgentSection>
               <AgentSection mode="Survival">
@@ -246,9 +246,6 @@ def getXML(reset):
                     <Block reward="-100.0" type="water" behaviour="onceOnly"/>
                     <Block reward="100.0" type="lit_redstone_ore" behaviour="onceOnly"/>
                   </RewardForTouchingBlockType>
-                    <RewardForSendingCommand reward="-1" />
-
-
 
                   <ObservationFromGrid>
                       <Grid name="floor3x3W">

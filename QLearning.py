@@ -13,6 +13,7 @@ import random
 import sys
 import time
 import itertools
+from math import sqrt
 #from numpy import argmax
 
 if sys.version_info[0] == 2:
@@ -45,6 +46,12 @@ class TabQAgent(object):
         self.mouseAction = ["attack 1", "use 1"]
         #self.directions = ["setYaw 0", "setYaw 30", "setYaw 60", "setYaw 90", "setYaw 120"]
 
+        self.playerX
+        self.playerZ
+        self.playerYaw
+        self.playerLife
+
+
         self.actions = list(itertools.product(self.movementActions, self.turnSpeed, self.hotkeyChoice, self.mouseAction)) #total number of actions: 140
         print("size of actions: ", len(self.actions))
         self.q_table = {}
@@ -74,7 +81,34 @@ class TabQAgent(object):
             self.logger.error("Incomplete observation received: %s" % obs_text)
             return 0
 
+
+        self.playerYaw = obs[u'Yaw']
+        self.playerX = obs[u'XPos']
+        self.playerZ = obs[u'ZPos']
+
+        '''
         #current_s needs to be changed to include,
+        canAttack = 0   # can only be 0 or 1
+        distanceFromEnemy = 100
+        angleFromEnemy = 0
+
+        if u'LineOfSight' in obs:
+            print(obs[u'LineOfSight'])
+            if(obs[u'LineOfSight'][u'inRange']):
+                print("in range\n")
+                canAttack = 1
+
+        if u'entities' in obs:
+            for e in obs[u'entities']:
+                print("entity: ",e)
+                distanceFromEnemy = int(sqrt((e["x"] - self.playerX)*(e["x"] - self.playerX) + (e["z"] - self.playerZ)*(e["z"] - self.playerZ)))
+                angleFromEnemy =
+
+
+        '''
+
+
+
 
         current_s = "%d:%d" % (int(obs[u'XPos']), int(obs[u'ZPos']))
         self.logger.debug("State: %s (x = %.2f, z = %.2f)" % (current_s, float(obs[u'XPos']), float(obs[u'ZPos'])))
@@ -95,7 +129,7 @@ class TabQAgent(object):
             maxExp = max(self.q_table[current_s])
             print("max is ",maxExp)
             bestResults = []
-            for i in range(4):
+            for i in range(140):
                 if self.q_table[current_s][i] == maxExp:
                     bestResults.append(i)
             next_action = random.choice(bestResults)
@@ -176,7 +210,7 @@ class TabQAgent(object):
             state1 = agent_host1.getWorldState()
             while state1.number_of_observations_since_last_state == 0:
                 print("waiting..")
-                sleep(1)
+                time.sleep(1)
 
         if(ob['Name'] == 'Player'):
             player = agent_host0
@@ -222,6 +256,7 @@ class TabQAgent(object):
                     self.logger.error("Error: %s" % error.text)
                 for reward in player_state.rewards:
                     current_r += reward.getValue()
+                    print("current_r", current_r)
             # allow time to stabilise after action
             while True:
                 time.sleep(0.1)
