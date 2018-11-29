@@ -198,10 +198,10 @@ def getXML(reset):
                 <ServerHandlers>
                   <FlatWorldGenerator generatorString="3;7,44*49,73,35:1,159:4,95:13,35:13,159:11,95:10,159:14,159:6,35:6,95:6;12;"/>
                   <DrawingDecorator>
-                    <DrawLine x1="-10" y1="56" z1="10", x2="10", y2="56", z2="10", type="gold_block"/>
-                    <DrawLine x1="10" y1="56" z1="10", x2="10", y2="56", z2="-10", type="gold_block"/>
-                    <DrawLine x1="-10" y1="56" z1="-10", x2="10", y2="56", z2="-10", type="gold_block"/>
-                    <DrawLine x1="-10" y1="56" z1="10", x2="-10", y2="56", z2="-10", type="gold_block"/>
+                    <DrawLine x1="-10", y1="56", z1="10", x2="10", y2="56", z2="10", type="gold_block"/>
+                    <DrawLine x1="10", y1="56", z1="10", x2="10", y2="56", z2="-10", type="gold_block"/>
+                    <DrawLine x1="-10", y1="56", z1="-10", x2="10", y2="56", z2="-10", type="gold_block"/>
+                    <DrawLine x1="-10", y1="56", z1="10", x2="-10", y2="56", z2="-10", type="gold_block"/>
                   </DrawingDecorator>
                   <ServerQuitFromTimeUp timeLimitMs="4000"/>
                   <ServerQuitWhenAnyAgentFinishes/>
