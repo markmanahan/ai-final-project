@@ -197,7 +197,7 @@ def getXML(reset):
               <ServerSection>
                 <ServerHandlers>
                   <FlatWorldGenerator generatorString="3;7,44*49,73,35:1,159:4,95:13,35:13,159:11,95:10,159:14,159:6,35:6,95:6;12;"/>
-                  <ServerQuitFromTimeUp timeLimitMs="10000"/>
+                  <ServerQuitFromTimeUp timeLimitMs="4000"/>
                   <ServerQuitWhenAnyAgentFinishes/>
                 </ServerHandlers>
               </ServerSection>
@@ -223,6 +223,9 @@ def getXML(reset):
                         <max x="1" y="-1" z="1"/>
                       </Grid>
                   </ObservationFromGrid>
+                  <ObservationFromNearbyEntities>
+                    <Range name="entities" xrange="'''+str(ARENA_WIDTH)+'''" yrange="2" zrange="'''+str(ARENA_BREADTH)+'''" />
+                  </ObservationFromNearbyEntities>
                   <RewardForSendingCommand reward="-1" />
                 </AgentHandlers>
               </AgentSection>
