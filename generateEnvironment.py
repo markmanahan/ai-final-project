@@ -8,15 +8,15 @@ import json
 import logging
 import math
 import os
-import random
+#import random
 import sys
 import time
-import re
+#import re
 import uuid
 from collections import namedtuple
-from operator import add
-from random import *
-import numpy as np
+#from operator import add
+#from random import *
+#import numpy as np
 import QLearning
 
 
@@ -183,8 +183,8 @@ def invMake():
     return(xml)
 
 def getXML(reset):
-    ARENA_WIDTH = 20
-    ARENA_BREADTH = 20
+    ARENA_WIDTH = 10
+    ARENA_BREADTH = 10
     # Set up the Mission XML:
     xml = '''<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
             <Mission xmlns="http://ProjectMalmo.microsoft.com" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -192,16 +192,21 @@ def getXML(reset):
                 <Summary>Hello world!</Summary>
               </About>
               <ServerSection>
+                <ServerInitialConditions>
+                 <Time>
+                    <StartTime>12000</StartTime>
+                     <AllowPassageOfTime>false</AllowPassageOfTime>
+                 </Time>
+                </ServerInitialConditions>
                 <ServerHandlers>
                   <FlatWorldGenerator generatorString="3;7,44*49,73,35:1,159:4,95:13,35:13,159:11,95:10,159:14,159:6,35:6,95:6;12;"/>
                   <DrawingDecorator>
-                    <DrawLine x1="-2" y1="56" z1="2" x2="2" y2="56" z2="2" type="gold_block"/>
-                    <DrawLine x1="2" y1="56" z1="2" x2="2" y2="56" z2="-2" type="gold_block"/>
-                    <DrawLine x1="-2" y1="56" z1="-2" x2="2" y2="56" z2="-2" type="gold_block"/>
-                    <DrawLine x1="-2" y1="56" z1="2" x2="-2" y2="56" z2="-2" type="gold_block"/>
+                    <DrawLine x1="-2" y1="57" z1="2" x2="2" y2="57" z2="2" type="gold_block"/>
+                    <DrawLine x1="2" y1="57" z1="2" x2="2" y2="57" z2="-2" type="gold_block"/>
+                    <DrawLine x1="-2" y1="57" z1="-2" x2="2" y2="57" z2="-2" type="gold_block"/>
+                    <DrawLine x1="-2" y1="57" z1="2" x2="-2" y2="57" z2="-2" type="gold_block"/>
                   </DrawingDecorator>
                   <ServerQuitFromTimeUp timeLimitMs="500000"/>
-                  <ServerQuitWhenAnyAgentFinishes description="someone died"/>
                 </ServerHandlers>
               </ServerSection>
               <AgentSection mode="Survival">
@@ -217,6 +222,7 @@ def getXML(reset):
                 <ContinuousMovementCommands turnSpeedDegs="420"/>
                 <InventoryCommands/>
                 <ObservationFromRay/>
+                <ObservationFromChat/>
                   <MissionQuitCommands/>
                   <ObservationFromFullStats/>
                   <ObservationFromGrid>
@@ -243,6 +249,7 @@ def getXML(reset):
                 </AgentStart>
                 <AgentHandlers>
                 <ChatCommands/>
+                <ObservationFromChat/>
                   <ContinuousMovementCommands turnSpeedDegs="420"/>
                   <ObservationFromRay/>
                   <MissionQuitCommands/>
@@ -250,11 +257,6 @@ def getXML(reset):
                   <ObservationFromNearbyEntities>
                     <Range name="entities" xrange="'''+str(ARENA_WIDTH)+'''" yrange="2" zrange="'''+str(ARENA_BREADTH)+'''" />
                   </ObservationFromNearbyEntities>
-
-                  <RewardForTouchingBlockType>
-                    <Block reward="-100.0" type="water" behaviour="onceOnly"/>
-                    <Block reward="100.0" type="lit_redstone_ore" behaviour="onceOnly"/>
-                  </RewardForTouchingBlockType>
 
                   <ObservationFromGrid>
                       <Grid name="floor3x3W">
@@ -312,9 +314,9 @@ for i in range(num_repeats):
     safeWaitForStart(agent_hosts)
 
     print('Repeat %d of %d' % (i + 1, num_repeats))
-    agent_hosts[0].sendCommand("chat /give @a minecraft:potion 1 0 {Potion:minecraft:healing}")
+    agent_hosts[0].sendCommand("chat /replaceitem entity @a slot.hotbar.1 minecraft:potion 1 0 {Potion:minecraft:healing}")
     agent_hosts[0].sendCommand("chat /replaceitem entity @a slot.weapon.offhand minecraft:shield")
-    agent_hosts[0].sendCommand("")
+    agent_hosts[0].sendCommand("chat /gamerule naturalRegeneration false")
 
     #ah = agent_hosts[i]
     cumulative_reward += agents.run(agent_hosts[0], agent_hosts[1])
