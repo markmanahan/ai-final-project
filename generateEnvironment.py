@@ -139,16 +139,13 @@ def GenBlock(x, y, z, blocktype):
     return '<DrawBlock x="' + str(x) + '" y="' + str(y) + '" z="' + str(z) + '" type="' + blocktype + '"/>'
 
 def GenPlayerStart(x, z):
-    return '<Placement x="' + str(x + 0.5) + '" y="56" z="' + str(z + 0.5) + '" yaw="0"/>'
+    return '<Placement x="' + str(x + 0.5) + '" y="56" z="' + str(z + 0.5) + '" yaw="180"/>'
 
 def GenEnemyStart(x, z):
     return '<Placement x="' + str(x + 0.5) + '" y="56" z="' + str(z + 0.5) + '" yaw="0"/>'
 
-pStart = {'x': 0, 'z': 0}
-eStart = {'x': 2, 'z': 2}
-
-pCurr = {'x': 0, 'z': 0}
-eCurr = {'x': 0, 'z': 0}
+pStart = {'x': 0, 'z': 1}
+eStart = {'x': 0, 'z': 0}
 
 
 def mazeCreator():
@@ -165,8 +162,8 @@ def mazeCreator():
             elif level_mat[i][j] == "P":
                 pStart['x'] = i
                 pStart['z'] = j
-                pCurr['x'] = i
-                pCurr['z'] = j
+                #pCurr['x'] = i
+                #pCurr['z'] = j
 
             elif level_mat[i][j] == ".":
                 genstring += GenBlock(i, 55, j, "glowstone") + "\n"
@@ -174,8 +171,8 @@ def mazeCreator():
             elif level_mat[i][j] == "G":
                 eStart['x'] = i
                 eStart['z'] = j
-                eCurr['x'] = i
-                eCurr['z'] = j
+                #eCurr['x'] = i
+                #eCurr['z'] = j
 
     return genstring
 
@@ -198,13 +195,13 @@ def getXML(reset):
                 <ServerHandlers>
                   <FlatWorldGenerator generatorString="3;7,44*49,73,35:1,159:4,95:13,35:13,159:11,95:10,159:14,159:6,35:6,95:6;12;"/>
                   <DrawingDecorator>
-                    <DrawLine x1="-10", y1="56", z1="10", x2="10", y2="56", z2="10", type="gold_block"/>
-                    <DrawLine x1="10", y1="56", z1="10", x2="10", y2="56", z2="-10", type="gold_block"/>
-                    <DrawLine x1="-10", y1="56", z1="-10", x2="10", y2="56", z2="-10", type="gold_block"/>
-                    <DrawLine x1="-10", y1="56", z1="10", x2="-10", y2="56", z2="-10", type="gold_block"/>
+                    <DrawLine x1="-2" y1="56" z1="2" x2="2" y2="56" z2="2" type="gold_block"/>
+                    <DrawLine x1="2" y1="56" z1="2" x2="2" y2="56" z2="-2" type="gold_block"/>
+                    <DrawLine x1="-2" y1="56" z1="-2" x2="2" y2="56" z2="-2" type="gold_block"/>
+                    <DrawLine x1="-2" y1="56" z1="2" x2="-2" y2="56" z2="-2" type="gold_block"/>
                   </DrawingDecorator>
-                  <ServerQuitFromTimeUp timeLimitMs="4000"/>
-                  <ServerQuitWhenAnyAgentFinishes/>
+                  <ServerQuitFromTimeUp timeLimitMs="500000"/>
+                  <ServerQuitWhenAnyAgentFinishes description="someone died"/>
                 </ServerHandlers>
               </ServerSection>
               <AgentSection mode="Survival">
@@ -214,8 +211,11 @@ def getXML(reset):
                 <Inventory><InventoryItem type="iron_sword" slot="0" quantity="1"/></Inventory>
                 </AgentStart>
                 <AgentHandlers>
-                  <ChatCommands/>
+
+
+                <ChatCommands/>
                 <ContinuousMovementCommands turnSpeedDegs="420"/>
+                <InventoryCommands/>
                 <ObservationFromRay/>
                   <MissionQuitCommands/>
                   <ObservationFromFullStats/>
@@ -232,7 +232,7 @@ def getXML(reset):
                   <ObservationFromNearbyEntities>
                     <Range name="entities" xrange="'''+str(ARENA_WIDTH)+'''" yrange="2" zrange="'''+str(ARENA_BREADTH)+'''" />
                   </ObservationFromNearbyEntities>
-                  <RewardForSendingCommand reward="-1" />
+
                 </AgentHandlers>
               </AgentSection>
               <AgentSection mode="Survival">
@@ -314,6 +314,7 @@ for i in range(num_repeats):
     print('Repeat %d of %d' % (i + 1, num_repeats))
     agent_hosts[0].sendCommand("chat /give @a minecraft:potion 1 0 {Potion:minecraft:healing}")
     agent_hosts[0].sendCommand("chat /replaceitem entity @a slot.weapon.offhand minecraft:shield")
+    agent_hosts[0].sendCommand("")
 
     #ah = agent_hosts[i]
     cumulative_reward += agents.run(agent_hosts[0], agent_hosts[1])
@@ -347,3 +348,4 @@ while not hasEnded:
 
 
 time.sleep(2)
+print(agents.q_table)

@@ -49,7 +49,9 @@ class TabQAgent(object):
         self.playerX = 0
         self.playerZ = 0
         self.playerYaw = 0
-        self.playerLife = 10
+        self.playerLife = 20.0
+
+        self.enemyLife = 20.0
 
 
         self.actions = list(itertools.product(self.movementActions, self.turnSpeed, self.hotkeyChoice, self.mouseAction)) #total number of actions: 140
@@ -88,6 +90,11 @@ class TabQAgent(object):
         self.playerZ = obs[u'ZPos']
         self.playerLife = obs[u'Life']
 
+        #if u'Life' in enemyOb[u'Life']:
+
+
+
+
 
         #current_s needs to be changed to include,
         canAttack = 0   # can only be 0 or 1
@@ -104,12 +111,13 @@ class TabQAgent(object):
 
         if u'entities' in obs:
             for e in obs[u'entities']:
-                if e[u'Name'] == 'Enemy':
+                #print("deubg: ",e)
+                if u'name' in e and e[u'name'] == 'Enemy':
 
-                    print("entity: ",)
+                    #print("entity: ",)
                     distanceFromEnemy = int(math.sqrt((e["x"] - self.playerX)*(e["x"] - self.playerX) + (e["z"] - self.playerZ)*(e["z"] - self.playerZ)))
                     yaw = -180 * math.atan2(e["x"] - self.playerX, e["z"] - self.playerZ) / math.pi
-                    print("My yaw: ", self.playerYaw, ", calc. yaw: ", yaw, ", Difference: ", yaw - self.playerYaw)
+                    #print("My yaw: ", self.playerYaw, ", calc. yaw: ", yaw, ", Difference: ", yaw - self.playerYaw)
                     difference = yaw - self.playerYaw
                     while difference < -180:
                         difference += 360;
@@ -125,7 +133,8 @@ class TabQAgent(object):
 
 
                                     # was: (int(obs[u'XPos']), int(obs[u'ZPos']))
-        current_s = "%d:%d:%.2f" % (canAttack, distanceFromEnemy, float(angleFromEnemy))
+        current_s = "%d:%d:%.1f" % (canAttack, distanceFromEnemy, float(angleFromEnemy))
+        print("State: ", current_s)
         self.logger.debug("State: %s (x = %.2f, z = %.1f)" % (current_s, float(obs[u'XPos']), float(obs[u'ZPos'])))
         if current_s not in self.q_table:
             self.q_table[current_s] = ([0] * len(self.actions))
@@ -138,7 +147,7 @@ class TabQAgent(object):
 
         # select the next action (find a s.t. self.actions[a] == next action)
         if random.random() <= self.epsilon:
-            next_action = random.choice(len(self.actions))
+            next_action = random.choice(range(len(self.actions)))
         else:
             #print(self.q_table[current_s])
             maxExp = max(self.q_table[current_s])
@@ -155,8 +164,20 @@ class TabQAgent(object):
 
 
         # try to send the selected action to agent, only update prev_s if this succeeds
-        for command in self.actions[next_action]:
-            agent_host.sendCommand(command)
+        agent_host.sendCommand(self.actions[next_action][0])
+        agent_host.sendCommand(self.actions[next_action][1])
+        agent_host.sendCommand(self.actions[next_action][2])
+        if(self.actions[next_action][2] == "hotbar.1 1"):
+            print("here")
+            agent_host.sendCommand("hotbar.1 0")
+        else:
+            agent_host.sendCommand("hotbar.2 0")
+
+        if(self.actions[next_action][3] == "attack 1"):
+            agent_host.sendCommand("attack 0")
+            agent_host.sendCommand("use 0")
+        agent_host.sendCommand(self.actions[next_action][3])
+
         self.prev_s = current_s
         self.prev_a = next_action
 
@@ -182,6 +203,8 @@ class TabQAgent(object):
 
         elif togo == "back":
             self.moveBack(agent)
+        agent.sendCommand("attack 0")
+        agent.sendCommand("attack 1")
 
 
     def moveRight(self, ah):
@@ -241,14 +264,13 @@ class TabQAgent(object):
         #unrolled first_action
         current_r = 0
         while True:
-            time.sleep(0.1)
+            time.sleep(0.5)
             player_state = player.getWorldState()
             enemy_state = enemy.getWorldState()
             for error in player_state.errors:
                 self.logger.error("Error: %s" % error.text)
-            for reward in player_state.rewards:
-                current_r += reward.getValue()
-                print("current_r ", current_r)
+
+            print("current_r ", current_r)
             if player_state.is_mission_running and len(player_state.observations) > 0 and not \
             player_state.observations[-1].text == "{}":
                 total_reward += self.act(player_state, player, current_r, enemy_state)
@@ -264,35 +286,95 @@ class TabQAgent(object):
         while player_state.is_mission_running:
             current_r = 0
 
+
+
             # wait for non-zero reward
+            '''
             while player_state.is_mission_running and current_r == 0:
-                time.sleep(0.1)
+                time.sleep(0.5)
                 player_state = player.getWorldState()
+                #enemy_state = enemy.getWorldState()
                 for error in player_state.errors:
                     self.logger.error("Error: %s" % error.text)
-                for reward in player_state.rewards:
-                    current_r += reward.getValue()
-                    print("current_r", current_r)
+
+                #This section handles reward
+
+                enemyOb = json.loads((enemy.getWorldState()).observations[-1].text)
+                playerOb = json.loads((player_state).observations[-1].text)
+                if u'Life' in enemyOb:
+                    print("enemy life found")
+                    if enemyOb[u'Life'] < self.enemyLife:
+                        current_r += (self.enemyLife - enemyOb[u'Life'])*5
+                    self.enemyLife = enemyOb[u'Life']
+
+                if u'Life' in playerOb:
+                    print('player life found')
+                    current_r += (playerOb[u'Life'] - self.playerLife)*5
+                    self.playerLife = playerOb[u'Life']
+
+                current_r -=1
+                print("current_r", current_r)
+            '''
             # allow time to stabilise after action
             while True:
-                time.sleep(0.1)
+                time.sleep(0.5)
                 player_state = player.getWorldState()
+                enemy_state = enemy.getWorldState()
+                if len(player_state.observations) == 0:
+                    continue
                 for error in player_state.errors:
                     self.logger.error("Error: %s" % error.text)
-                for reward in player_state.rewards:
-                    current_r += reward.getValue()
+
+                enemyOb = json.loads((enemy_state).observations[-1].text)
+                playerOb = json.loads((player_state).observations[-1].text)
+                if u'Life' in enemyOb:
+
+                    if enemyOb[u'Life'] < self.enemyLife:
+                        current_r += (self.enemyLife - enemyOb[u'Life'])*5
+                    self.enemyLife = enemyOb[u'Life']
+
+                if u'Life' in playerOb:
+                    current_r += (playerOb[u'Life'] - self.playerLife)*5
+                    self.playerLife = playerOb[u'Life']
+                current_r-=1
+                print("current_r: ",current_r)
+
                 if player_state.is_mission_running and len(player_state.observations) > 0 and not \
                 player_state.observations[-1].text == "{}":
-                    total_reward += self.act(player_state, player, current_r)
-                    self.enemyAgentMoveRand(enemy, enemy.getWorldState())
+                    total_reward += self.act(player_state, player, current_r, enemy_state)
+                    self.enemyAgentMoveRand(enemy, enemy_state)
                     break
                 if not player_state.is_mission_running:
                     break
 
 
 
-
+        #time.sleep(1)
         # process final reward
+
+        player_state = player.peekWorldState()
+        enemy_state = enemy.peekWorldState()
+        enemyOb = enemy_state.observations
+        playerOb = player_state.observations
+        if(len(player_state.observations) == 0):
+            print("empty player")
+        if(len(enemy_state.observations) == 0):
+            print("empty enemy")
+
+        '''
+        if u'PlayersKilled' in playerOb:
+            if(playerOb[u'PlayersKilled'] == 1):
+                print("VICTORY\n")
+                current_r += 1000
+        if u'PlayersKilled' in enemyOb:
+            if enemyOb[u'PlayersKilled'] == 1:
+                print("DEFEAT\n")
+                current_r -=1000
+        '''
+        #print(playerOb)
+        #print(enemy_state.mission_control_messages)
+        time.sleep(10)
+
         total_reward += current_r
 
         # update Q values
@@ -300,52 +382,8 @@ class TabQAgent(object):
             self.updateQTableFromTerminatingState(current_r, self.prev_s, self.prev_a)
 
 
-        return 0
+        return total_reward
 
-    # do not change this function
-    def drawQ(self, curr_x=None, curr_y=None):
-        scale = 50
-        world_x = 6
-        world_y = 14
-        if self.canvas is None or self.root is None:
-            self.root = tk.Tk()
-            self.root.wm_title("Q-table")
-            self.canvas = tk.Canvas(self.root, width=world_x * scale, height=world_y * scale, borderwidth=0,
-                                    highlightthickness=0, bg="black")
-            self.canvas.grid()
-            self.root.update()
-        self.canvas.delete("all")
-        action_inset = 0.1
-        action_radius = 0.1
-        curr_radius = 0.2
-        action_positions = [(0.5, action_inset), (0.5, 1 - action_inset), (action_inset, 0.5), (1 - action_inset, 0.5)]
-        # (NSWE to match action order)
-        min_value = -20
-        max_value = 20
-        for x in range(world_x):
-            for y in range(world_y):
-                s = "%d:%d" % (x, y)
-                self.canvas.create_rectangle(x * scale, y * scale, (x + 1) * scale, (y + 1) * scale, outline="#fff",
-                                             fill="#002")
-                for action in range(4):
-                    if not s in self.q_table:
-                        continue
-                    value = self.q_table[s][action]
-                    color = int(255 * (value - min_value) / (max_value - min_value))  # map value to 0-255
-                    color = max(min(color, 255), 0)  # ensure within [0,255]
-                    color_string = '#%02x%02x%02x' % (255 - color, color, 0)
-                    self.canvas.create_oval((x + action_positions[action][0] - action_radius) * scale,
-                                            (y + action_positions[action][1] - action_radius) * scale,
-                                            (x + action_positions[action][0] + action_radius) * scale,
-                                            (y + action_positions[action][1] + action_radius) * scale,
-                                            outline=color_string, fill=color_string)
-        if curr_x is not None and curr_y is not None:
-            self.canvas.create_oval((curr_x + 0.5 - curr_radius) * scale,
-                                    (curr_y + 0.5 - curr_radius) * scale,
-                                    (curr_x + 0.5 + curr_radius) * scale,
-                                    (curr_y + 0.5 + curr_radius) * scale,
-                                    outline="#fff", fill="#fff")
-        self.root.update()
 
 
 
