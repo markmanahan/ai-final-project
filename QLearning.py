@@ -29,7 +29,7 @@ class TabQAgent(object):
 
         self.epsilon = 0.05  # exploration rate
         self.alpha = 0.2     # learning rate
-        self.gamma = 0.8  # reward discount factor
+        self.gamma = 0.85  # reward discount factor
 
         self.logger = logging.getLogger(__name__)
         if False:  # True if you want to see more information
@@ -43,7 +43,7 @@ class TabQAgent(object):
         self.movementActions = ["move 0", "move 1", "move -1", "strafe 1", "strafe -1"]
         self.turnSpeed = ["turn 0", "turn 0.33", "turn 0.66", "turn 1", "turn -0.33", "turn -0.66", "turn -1"]
         self.hotkeyChoice = ["hotbar.1 1", "hotbar.2 1"]
-        self.mouseAction = ["attack 1", "use 1"]
+        self.mouseAction = ["", "attack 1", "use 1"]
         #self.directions = ["setYaw 0", "setYaw 30", "setYaw 60", "setYaw 90", "setYaw 120"]
 
         self.playerX = 0
@@ -78,11 +78,11 @@ class TabQAgent(object):
 
     def act(self, world_state, agent_host, current_r, enemy_state):
         obs_text = world_state.observations[-1].text
-        enemyOb = enemy_state.observations[-1].text
+        enemyOb = json.loads(enemy_state.observations[-1].text)
         obs = json.loads(obs_text)  # most recent observation
         self.logger.debug(obs)
         if not u'XPos' in obs or not u'ZPos' in obs:
-            self.logger.error("Incomplete observation received: %s" % obs_text)
+            self.logger.error("Incomplete observation received: %s\n\n\n" % obs_text)
             return 0
 
 
@@ -91,14 +91,19 @@ class TabQAgent(object):
         self.playerZ = obs[u'ZPos']
         self.playerLife = obs[u'Life']
         healthHighorLow = 1
+        enemyCanAttack = 0
 
         if u'Life' in obs:
-            if obs[u'Life'] <= 10:
+            if obs[u'Life'] <= 12:
                 healthHighorLow = 0
 
-        if u'IsAlive' in obs:
-            print("is alive: ", obs[u'IsAlive'])
+        #if u'IsAlive' in obs:
+        #    print("is alive: ", obs[u'IsAlive'])
 
+        if u'LineOfSight' in enemyOb:
+            if(enemyOb[u'LineOfSight'][u'inRange'] and enemyOb[u'LineOfSight'][u'type'] == 'Player'):
+                #print("player seen\n")
+                enemyCanAttack = 1
 
 
 
@@ -108,13 +113,15 @@ class TabQAgent(object):
         distanceFromEnemy = 100
         angleFromEnemy = 0
 
+
+
+
         if u'LineOfSight' in obs:
-            print(obs[u'LineOfSight'])
+            #print(obs[u'LineOfSight'])
             if(obs[u'LineOfSight'][u'inRange'] and obs[u'LineOfSight'][u'type'] == 'Enemy'):
-                print("in range\n")
+                #print("in range\n")
                 canAttack = 1
-            else:
-                print("NOT IN RANGE\n\n\n\n")
+                #print("NOT IN RANGE\n\n\n\n")
         else:
             print("No line of sight")
 
@@ -150,9 +157,9 @@ class TabQAgent(object):
 
 
                                     # was: (int(obs[u'XPos']), int(obs[u'ZPos']))
-        current_s = "%d:%d:%.1f:%d:%d" % (canAttack, distanceFromEnemy, float(angleFromEnemy), self.playerDrankPotion, healthHighorLow)
+        current_s = "%d:%d:%.1f:%d:%d%d" % (canAttack, distanceFromEnemy, float(angleFromEnemy), self.playerDrankPotion, healthHighorLow, enemyCanAttack)
         print("State: ", current_s)
-        self.logger.debug("State: %s (x = %.2f, z = %.1f)" % (current_s, float(obs[u'XPos']), float(obs[u'ZPos'])))
+        #self.logger.debug("State: %s (x = %.2f, z = %.1f)" % (current_s, float(obs[u'XPos']), float(obs[u'ZPos'])))
         if current_s not in self.q_table:
             self.q_table[current_s] = ([0] * len(self.actions))
 
@@ -174,7 +181,6 @@ class TabQAgent(object):
                     bestResults.append(i)
             next_action = random.choice(bestResults)
 
-            print(next_action)
             print(self.actions[next_action])
 
 
@@ -204,26 +210,12 @@ class TabQAgent(object):
     #TEMP Code for enemy from Reflex
 
     def enemyAgentMoveRand(self, agent):
-        legalLST = ["right", "left", "forward", "back"]
-        y = random.randint(0,len(legalLST)-1)
-        togo = legalLST[y]
-        if togo == "right":
-            self.moveRight(agent)
-
-        elif togo == "left":
-            self.moveLeft(agent)
-
-        elif togo == "forward":
-            self.moveStraight(agent)
-
-        elif togo == "back":
-            self.moveBack(agent)
-
-        agent.sendCommand("setYaw " + str(random.randint(0,359)))
+        y = random.choice(self.movementActions)
+        agent.sendCommand(y)
+        agent.sendCommand("turn " + str(random.uniform(-1,1)))
         agent.sendCommand("attack 0")
         agent.sendCommand("attack 1")
-
-
+    '''
     def moveRight(self, ah):
         ah.sendCommand("strafe 1")
 
@@ -238,15 +230,8 @@ class TabQAgent(object):
 
     def moveBack(self, ah):
         ah.sendCommand("move -1")
+    '''
 
-
-
-
-
-
-
-
-    # do not change this function
     def run(self, agent_host0, agent_host1):
         """run the agent on the world"""
 
@@ -277,7 +262,7 @@ class TabQAgent(object):
         #unrolled first_action
         current_r = 0
         while True:
-            time.sleep(0.5)
+            time.sleep(0.2)
             player_state = player.getWorldState()
             enemy_state = enemy.getWorldState()
             for error in player_state.errors:
@@ -299,7 +284,7 @@ class TabQAgent(object):
 
             # allow time to stabilise after action
             while True:
-                time.sleep(0.5)
+                time.sleep(0.2)
                 player_state = player.peekWorldState()
                 enemy_state = enemy.peekWorldState()
                 if not player_state.is_mission_running:
@@ -315,12 +300,12 @@ class TabQAgent(object):
                     if u'Life' in enemyOb:
 
                         if enemyOb[u'Life'] < self.enemyLife:
-                            current_r += (self.enemyLife - enemyOb[u'Life'])*5
+                            current_r += (self.enemyLife - enemyOb[u'Life'])*15
                         self.enemyLife = enemyOb[u'Life']
 
                     if u'Life' in playerOb:
                         current_r += (playerOb[u'Life'] - self.playerLife)*5
-                        self.playerLife = playerOb[u'Life']
+                        #self.playerLife = playerOb[u'Life']
                     current_r-=1
                     print("current_r: ",current_r)
 
@@ -332,12 +317,12 @@ class TabQAgent(object):
                 else: #Seems to happen only when one of them has died... or issues
                     print("NO NEW OBS\n")
 
-
+                    '''
                     if player_state.number_of_observations_since_last_state > 0:
                         print(player_state.observations[-1].text)
                     if enemy_state.number_of_observations_since_last_state > 0:
                         print(enemy_state.observations[-1].text)
-
+                    '''
                     enemy.sendCommand("quit")
                     player.sendCommand("quit")
                     break

@@ -192,7 +192,7 @@ def getXML(reset):
                 <Summary>Hello world!</Summary>
               </About>
             <ModSettings>
-                <MsPerTick> 30 </MsPerTick>
+                <MsPerTick> 10 </MsPerTick>
             </ModSettings>
 
               <ServerSection>
@@ -229,16 +229,6 @@ def getXML(reset):
                 <ObservationFromHotBar/>
                   <MissionQuitCommands/>
                   <ObservationFromFullStats/>
-                  <ObservationFromGrid>
-                      <Grid name="floor3x3W">
-                        <min x="-1" y="0" z="-1"/>
-                        <max x="1" y="0" z="1"/>
-                      </Grid>
-                      <Grid name="floor3x3F">
-                        <min x="-1" y="-1" z="-1"/>
-                        <max x="1" y="-1" z="1"/>
-                      </Grid>
-                  </ObservationFromGrid>
                   <ObservationFromNearbyEntities>
                     <Range name="entities" xrange="'''+str(ARENA_WIDTH)+'''" yrange="2" zrange="'''+str(ARENA_BREADTH)+'''" />
                   </ObservationFromNearbyEntities>
@@ -255,7 +245,6 @@ def getXML(reset):
                 <ChatCommands/>
 
                   <ContinuousMovementCommands turnSpeedDegs="420"/>
-                  <AbsoluteMovementCommands/>
                   <ObservationFromRay/>
                   <ObservationFromHotBar/>
                   <MissionQuitCommands/>
@@ -263,17 +252,6 @@ def getXML(reset):
                   <ObservationFromNearbyEntities>
                     <Range name="entities" xrange="'''+str(ARENA_WIDTH)+'''" yrange="2" zrange="'''+str(ARENA_BREADTH)+'''" />
                   </ObservationFromNearbyEntities>
-
-                  <ObservationFromGrid>
-                      <Grid name="floor3x3W">
-                        <min x="-1" y="0" z="-1"/>
-                        <max x="1" y="0" z="1"/>
-                      </Grid>
-                      <Grid name="floor3x3F">
-                        <min x="-1" y="-1" z="-1"/>
-                        <max x="1" y="-1" z="1"/>
-                      </Grid>
-                  </ObservationFromGrid>
                 </AgentHandlers>
               </AgentSection>
             </Mission>'''
@@ -305,8 +283,12 @@ timed_out = False
 
 # Main mission loop
 
-num_repeats = 1
+num_repeats = 50
 cumulative_reward = 0
+rewards = []
+
+
+###  Uncomment this section if you want to load from previous training ###
 '''
 try:
     with open('qtable.txt', 'r') as saveFile:
@@ -330,9 +312,8 @@ for i in range(num_repeats):
     agent_hosts[0].sendCommand("chat /gamerule naturalRegeneration false")
 
     #ah = agent_hosts[i]
-    cumulative_reward += agents.run(agent_hosts[0], agent_hosts[1])
-
-    print("Cumulative reward: ", cumulative_reward)
+    rewards.append(agents.run(agent_hosts[0], agent_hosts[1]))
+    cumulative_reward += rewards[-1]
 
     ws = agent_hosts[-1].getWorldState()
     while ws.is_mission_running:
@@ -359,8 +340,8 @@ while not hasEnded:
         if world_state.is_mission_running:
             hasEnded = False # all not good
 
-
-time.sleep(2)
+print("Cumulative Reward: ", cumulative_reward)
+print("All rewards:\n", rewards)
 
 with open('qtable.txt', 'w') as saveFile:
     saveFile.write(json.dumps(agents.q_table))
