@@ -50,6 +50,7 @@ class TabQAgent(object):
         self.playerZ = 0
         self.playerYaw = 0
         self.playerLife = 20.0
+        self.playerDrankPotion = 0 # 0 false 1 true
 
         self.enemyLife = 20.0
 
@@ -89,8 +90,14 @@ class TabQAgent(object):
         self.playerX = obs[u'XPos']
         self.playerZ = obs[u'ZPos']
         self.playerLife = obs[u'Life']
+        healthHighorLow = 1
 
-        #if u'Life' in enemyOb[u'Life']:
+        if u'Life' in obs:
+            if obs[u'Life'] <= 10:
+                healthHighorLow = 0
+
+        if u'IsAlive' in obs:
+            print("is alive: ", obs[u'IsAlive'])
 
 
 
@@ -103,9 +110,11 @@ class TabQAgent(object):
 
         if u'LineOfSight' in obs:
             print(obs[u'LineOfSight'])
-            if(obs[u'LineOfSight'][u'inRange']):
+            if(obs[u'LineOfSight'][u'inRange'] and obs[u'LineOfSight'][u'type'] == 'Enemy'):
                 print("in range\n")
                 canAttack = 1
+            else:
+                print("NOT IN RANGE\n\n\n\n")
         else:
             print("No line of sight")
 
@@ -116,6 +125,8 @@ class TabQAgent(object):
 
                     #print("entity: ",)
                     distanceFromEnemy = int(math.sqrt((e["x"] - self.playerX)*(e["x"] - self.playerX) + (e["z"] - self.playerZ)*(e["z"] - self.playerZ)))
+                    if(distanceFromEnemy > 5): #Cap off distance we don't care if they are farther apart
+                        distanceFromEnemy = 5
                     yaw = -180 * math.atan2(e["x"] - self.playerX, e["z"] - self.playerZ) / math.pi
                     #print("My yaw: ", self.playerYaw, ", calc. yaw: ", yaw, ", Difference: ", yaw - self.playerYaw)
                     difference = yaw - self.playerYaw
@@ -124,19 +135,22 @@ class TabQAgent(object):
                     while difference > 180:
                         difference -= 360;
                     difference /= 180.0
-                    print("Final distance: ", difference)
+                    #print("Final distance: ", difference)
                     vals = [0, 0.33, 0.66, 1, -0.33, -0.66, -1]
                     i = argmin([abs(difference - vals[j]) for j in range(7)])
                     angleFromEnemy = vals[i]
-                    print("Final angle: ", angleFromEnemy)
+                    #print("Final angle: ", angleFromEnemy)
 
         else:
             print("p a n i c\n\n\n")
             print(obs)
+        if(self.playerDrankPotion == 0 and obs[u'Hotbar_1_item'] == "glass_bottle"):
+            print("player drank potion")
+            self.playerDrankPotion = 1
 
 
                                     # was: (int(obs[u'XPos']), int(obs[u'ZPos']))
-        current_s = "%d:%d:%.1f" % (canAttack, distanceFromEnemy, float(angleFromEnemy))
+        current_s = "%d:%d:%.1f:%d:%d" % (canAttack, distanceFromEnemy, float(angleFromEnemy), self.playerDrankPotion, healthHighorLow)
         print("State: ", current_s)
         self.logger.debug("State: %s (x = %.2f, z = %.1f)" % (current_s, float(obs[u'XPos']), float(obs[u'ZPos'])))
         if current_s not in self.q_table:
@@ -153,7 +167,7 @@ class TabQAgent(object):
         else:
             #print(self.q_table[current_s])
             maxExp = max(self.q_table[current_s])
-            print("max is ",maxExp)
+            #print("max is ",maxExp)
             bestResults = []
             for i in range(len(self.actions)):
                 if self.q_table[current_s][i] == maxExp:
@@ -204,6 +218,8 @@ class TabQAgent(object):
 
         elif togo == "back":
             self.moveBack(agent)
+
+        agent.sendCommand("setYaw " + str(random.randint(0,359)))
         agent.sendCommand("attack 0")
         agent.sendCommand("attack 1")
 
@@ -313,15 +329,15 @@ class TabQAgent(object):
                         total_reward += self.act(player_state, player, current_r, enemy_state)
                         self.enemyAgentMoveRand(enemy)
                         break
-                else: #Seems to happen ONLY when one of them has died... or issues
+                else: #Seems to happen only when one of them has died... or issues
                     print("NO NEW OBS\n")
 
-                    '''
+
                     if player_state.number_of_observations_since_last_state > 0:
                         print(player_state.observations[-1].text)
                     if enemy_state.number_of_observations_since_last_state > 0:
                         print(enemy_state.observations[-1].text)
-                    '''
+
                     enemy.sendCommand("quit")
                     player.sendCommand("quit")
                     break

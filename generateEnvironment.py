@@ -191,6 +191,10 @@ def getXML(reset):
               <About>
                 <Summary>Hello world!</Summary>
               </About>
+            <ModSettings>
+                <MsPerTick> 30 </MsPerTick>
+            </ModSettings>
+
               <ServerSection>
                 <ServerInitialConditions>
                  <Time>
@@ -222,7 +226,7 @@ def getXML(reset):
                 <ContinuousMovementCommands turnSpeedDegs="420"/>
                 <InventoryCommands/>
                 <ObservationFromRay/>
-                <ObservationFromChat/>
+                <ObservationFromHotBar/>
                   <MissionQuitCommands/>
                   <ObservationFromFullStats/>
                   <ObservationFromGrid>
@@ -249,9 +253,11 @@ def getXML(reset):
                 </AgentStart>
                 <AgentHandlers>
                 <ChatCommands/>
-                <ObservationFromChat/>
+
                   <ContinuousMovementCommands turnSpeedDegs="420"/>
+                  <AbsoluteMovementCommands/>
                   <ObservationFromRay/>
+                  <ObservationFromHotBar/>
                   <MissionQuitCommands/>
                   <ObservationFromFullStats/>
                   <ObservationFromNearbyEntities>
@@ -299,11 +305,16 @@ timed_out = False
 
 # Main mission loop
 
-num_repeats = 3
+num_repeats = 1
 cumulative_reward = 0
-
-
-
+'''
+try:
+    with open('qtable.txt', 'r') as saveFile:
+        agents.q_table = json.loads(saveFile.read())
+except:
+    print("File not found\n")
+    exit(1)
+'''
 for i in range(num_repeats):
 
     my_mission_record = MalmoPython.MissionRecordSpec()
@@ -314,14 +325,14 @@ for i in range(num_repeats):
     safeWaitForStart(agent_hosts)
 
     print('Repeat %d of %d' % (i + 1, num_repeats))
-    agent_hosts[0].sendCommand("chat /replaceitem entity @a slot.hotbar.1 minecraft:potion 1 0 {Potion:minecraft:healing}")
+    agent_hosts[0].sendCommand("chat /replaceitem entity @a slot.hotbar.1 minecraft:potion 1 0 {Potion:minecraft:strong_healing}")
     agent_hosts[0].sendCommand("chat /replaceitem entity @a slot.weapon.offhand minecraft:shield")
     agent_hosts[0].sendCommand("chat /gamerule naturalRegeneration false")
 
     #ah = agent_hosts[i]
     cumulative_reward += agents.run(agent_hosts[0], agent_hosts[1])
 
-    #while not timed_out:
+    print("Cumulative reward: ", cumulative_reward)
 
     ws = agent_hosts[-1].getWorldState()
     while ws.is_mission_running:
@@ -350,4 +361,7 @@ while not hasEnded:
 
 
 time.sleep(2)
-print(agents.q_table)
+
+with open('qtable.txt', 'w') as saveFile:
+    saveFile.write(json.dumps(agents.q_table))
+#print(agents.q_table)
