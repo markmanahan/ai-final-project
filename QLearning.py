@@ -29,7 +29,7 @@ class TabQAgent(object):
 
         self.epsilon = 0.05  # exploration rate
         self.alpha = 0.2     # learning rate
-        self.gamma = 0.85  # reward discount factor
+        self.gamma = 0.8  # reward discount factor
 
         self.logger = logging.getLogger(__name__)
         if False:  # True if you want to see more information
@@ -41,7 +41,7 @@ class TabQAgent(object):
 
 
         self.movementActions = ["move 0", "move 1", "move -1", "strafe 1", "strafe -1"]
-        self.turnSpeed = ["turn 0", "turn 0.33", "turn 0.66", "turn 1", "turn -0.33", "turn -0.66", "turn -1"]
+        self.turnSpeed = ["turn 0","turn 0.5", "turn 1", "turn -0.5", "turn -1"]
         self.hotkeyChoice = ["hotbar.1 1", "hotbar.2 1"]
         self.mouseAction = ["", "attack 1", "use 1"]
         #self.directions = ["setYaw 0", "setYaw 30", "setYaw 60", "setYaw 90", "setYaw 120"]
@@ -56,7 +56,8 @@ class TabQAgent(object):
 
 
         self.actions = list(itertools.product(self.movementActions, self.turnSpeed, self.hotkeyChoice, self.mouseAction)) #total number of actions: 140
-        print("size of actions: ", len(self.actions))
+        self.actions2 = list(itertools.product(self.movementActions, self.turnSpeed, ["hotbar.1 1"], self.mouseAction))
+        print("size of actions: ", len(self.actions2))
         self.q_table = {}
         self.canvas = None
         self.root = None
@@ -154,13 +155,15 @@ class TabQAgent(object):
         if(self.playerDrankPotion == 0 and obs[u'Hotbar_1_item'] == "glass_bottle"):
             print("player drank potion")
             self.playerDrankPotion = 1
+            self.actions = self.actions2 # get rid of that hotkey as option
 
 
                                     # was: (int(obs[u'XPos']), int(obs[u'ZPos']))
-        current_s = "%d:%d:%.1f:%d:%d%d" % (canAttack, distanceFromEnemy, float(angleFromEnemy), self.playerDrankPotion, healthHighorLow, enemyCanAttack)
+        current_s = "%d:%d:%.1f:%d:%d:%d" % (canAttack, distanceFromEnemy, float(angleFromEnemy), self.playerDrankPotion, healthHighorLow, enemyCanAttack)
         print("State: ", current_s)
         #self.logger.debug("State: %s (x = %.2f, z = %.1f)" % (current_s, float(obs[u'XPos']), float(obs[u'ZPos'])))
         if current_s not in self.q_table:
+            print("NEW STATE\n")
             self.q_table[current_s] = ([0] * len(self.actions))
 
         # update Q values
@@ -300,12 +303,16 @@ class TabQAgent(object):
                     if u'Life' in enemyOb:
 
                         if enemyOb[u'Life'] < self.enemyLife:
-                            current_r += (self.enemyLife - enemyOb[u'Life'])*15
+                            current_r += (self.enemyLife - enemyOb[u'Life'])*20
                         self.enemyLife = enemyOb[u'Life']
 
                     if u'Life' in playerOb:
                         current_r += (playerOb[u'Life'] - self.playerLife)*5
                         #self.playerLife = playerOb[u'Life']
+                    if u'LineOfSight' in playerOb:
+                        if playerOb[u'LineOfSight'][u'type'] == 'Enemy':
+                            current_r += 2 # Give points just for looking at enemy
+
                     current_r-=1
                     print("current_r: ",current_r)
 

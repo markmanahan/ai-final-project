@@ -144,8 +144,8 @@ def GenPlayerStart(x, z):
 def GenEnemyStart(x, z):
     return '<Placement x="' + str(x + 0.5) + '" y="56" z="' + str(z + 0.5) + '" yaw="0"/>'
 
-pStart = {'x': 0, 'z': 1}
-eStart = {'x': 0, 'z': 0}
+pStart = {'x': 0, 'z': 2}
+eStart = {'x': 0, 'z': -1}
 
 
 def mazeCreator():
@@ -191,10 +191,6 @@ def getXML(reset):
               <About>
                 <Summary>Hello world!</Summary>
               </About>
-            <ModSettings>
-                <MsPerTick> 10 </MsPerTick>
-            </ModSettings>
-
               <ServerSection>
                 <ServerInitialConditions>
                  <Time>
@@ -205,10 +201,10 @@ def getXML(reset):
                 <ServerHandlers>
                   <FlatWorldGenerator generatorString="3;7,44*49,73,35:1,159:4,95:13,35:13,159:11,95:10,159:14,159:6,35:6,95:6;12;"/>
                   <DrawingDecorator>
-                    <DrawLine x1="-2" y1="57" z1="2" x2="2" y2="57" z2="2" type="gold_block"/>
-                    <DrawLine x1="2" y1="57" z1="2" x2="2" y2="57" z2="-2" type="gold_block"/>
-                    <DrawLine x1="-2" y1="57" z1="-2" x2="2" y2="57" z2="-2" type="gold_block"/>
-                    <DrawLine x1="-2" y1="57" z1="2" x2="-2" y2="57" z2="-2" type="gold_block"/>
+                    <DrawLine x1="-3" y1="57" z1="3" x2="3" y2="57" z2="3" type="gold_block"/>
+                    <DrawLine x1="3" y1="57" z1="3" x2="3" y2="57" z2="-3" type="gold_block"/>
+                    <DrawLine x1="-3" y1="57" z1="-3" x2="3" y2="57" z2="-3" type="gold_block"/>
+                    <DrawLine x1="-3" y1="57" z1="3" x2="-3" y2="57" z2="-3" type="gold_block"/>
                   </DrawingDecorator>
                   <ServerQuitFromTimeUp timeLimitMs="500000"/>
                 </ServerHandlers>
@@ -283,7 +279,7 @@ timed_out = False
 
 # Main mission loop
 
-num_repeats = 50
+num_repeats = 5
 cumulative_reward = 0
 rewards = []
 
@@ -292,6 +288,7 @@ rewards = []
 '''
 try:
     with open('qtable.txt', 'r') as saveFile:
+        print("loading qtable...\n\n")
         agents.q_table = json.loads(saveFile.read())
 except:
     print("File not found\n")
