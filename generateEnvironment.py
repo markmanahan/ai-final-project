@@ -201,10 +201,10 @@ def getXML(reset):
                 <ServerHandlers>
                   <FlatWorldGenerator generatorString="3;7,44*49,73,35:1,159:4,95:13,35:13,159:11,95:10,159:14,159:6,35:6,95:6;12;"/>
                   <DrawingDecorator>
-                    <DrawLine x1="-3" y1="57" z1="3" x2="3" y2="57" z2="3" type="gold_block"/>
-                    <DrawLine x1="3" y1="57" z1="3" x2="3" y2="57" z2="-3" type="gold_block"/>
-                    <DrawLine x1="-3" y1="57" z1="-3" x2="3" y2="57" z2="-3" type="gold_block"/>
-                    <DrawLine x1="-3" y1="57" z1="3" x2="-3" y2="57" z2="-3" type="gold_block"/>
+                    <DrawLine x1="-4" y1="57" z1="4" x2="4" y2="57" z2="4" type="gold_block"/>
+                    <DrawLine x1="4" y1="57" z1="4" x2="4" y2="57" z2="-4" type="gold_block"/>
+                    <DrawLine x1="-4" y1="57" z1="-4" x2="4" y2="57" z2="-4" type="gold_block"/>
+                    <DrawLine x1="-4" y1="57" z1="4" x2="-4" y2="57" z2="-4" type="gold_block"/>
                   </DrawingDecorator>
                   <ServerQuitFromTimeUp timeLimitMs="500000"/>
                 </ServerHandlers>
@@ -285,7 +285,7 @@ rewards = []
 
 
 ###  Uncomment this section if you want to load from previous training ###
-'''
+
 try:
     with open('qtable.txt', 'r') as saveFile:
         print("loading qtable...\n\n")
@@ -293,7 +293,7 @@ try:
 except:
     print("File not found\n")
     exit(1)
-'''
+
 for i in range(num_repeats):
 
     my_mission_record = MalmoPython.MissionRecordSpec()

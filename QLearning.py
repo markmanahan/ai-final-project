@@ -41,7 +41,7 @@ class TabQAgent(object):
 
 
         self.movementActions = ["move 0", "move 1", "move -1", "strafe 1", "strafe -1"]
-        self.turnSpeed = ["turn 0","turn 0.5", "turn 1", "turn -0.5", "turn -1"]
+        self.turnSpeed = ["T","turn 0.5", "turn 1", "turn -0.5", "turn -1"]  #"turn 0","turn 0.5", "turn 1", "turn -0.5", "turn -1"
         self.hotkeyChoice = ["hotbar.1 1", "hotbar.2 1"]
         self.mouseAction = ["", "attack 1", "use 1"]
         #self.directions = ["setYaw 0", "setYaw 30", "setYaw 60", "setYaw 90", "setYaw 120"]
@@ -113,6 +113,7 @@ class TabQAgent(object):
         canAttack = 0   # can only be 0 or 1
         distanceFromEnemy = 100
         angleFromEnemy = 0
+        difference = 0
 
 
 
@@ -159,7 +160,7 @@ class TabQAgent(object):
 
 
                                     # was: (int(obs[u'XPos']), int(obs[u'ZPos']))
-        current_s = "%d:%d:%.1f:%d:%d:%d" % (canAttack, distanceFromEnemy, float(angleFromEnemy), self.playerDrankPotion, healthHighorLow, enemyCanAttack)
+        current_s = "%d:%d:%.1f:%d:%d:%d" % (canAttack, distanceFromEnemy, angleFromEnemy, self.playerDrankPotion, healthHighorLow, enemyCanAttack)
         print("State: ", current_s)
         #self.logger.debug("State: %s (x = %.2f, z = %.1f)" % (current_s, float(obs[u'XPos']), float(obs[u'ZPos'])))
         if current_s not in self.q_table:
@@ -190,6 +191,10 @@ class TabQAgent(object):
 
         # try to send the selected action to agent, only update prev_s if this succeeds
         agent_host.sendCommand(self.actions[next_action][0])
+        if(self.actions[next_action][1] == "T"):
+            agent_host.sendCommand("turn " + '%.2f'%difference)
+        else:
+            agent_host.sendCommand(self.actions[next_action][1])
         agent_host.sendCommand(self.actions[next_action][1])
         agent_host.sendCommand(self.actions[next_action][2])
         if(self.actions[next_action][2] == "hotbar.1 1"):
