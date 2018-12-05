@@ -277,7 +277,7 @@ class TabQAgent(object):
                 self.logger.error("Error: %s" % error.text)
 
             print("current_r ", current_r)
-            if player_state.is_mission_running and len(player_state.observations) > 0 and not \
+            if player_state.is_mission_running and len(player_state.observations)>0 and len(enemy_state.observations)> 0 and not \
             player_state.observations[-1].text == "{}":
                 total_reward += self.act(player_state, player, current_r, enemy_state)
                 self.enemyAgentMoveRand(enemy)
