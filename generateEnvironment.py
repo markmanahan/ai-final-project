@@ -147,6 +147,8 @@ def GenEnemyStart(x, z):
 pStart = {'x': 0, 'z': 2}
 eStart = {'x': 0, 'z': -1}
 
+TIMERATE = 50
+
 
 def mazeCreator():
     genstring = ""
@@ -191,6 +193,10 @@ def getXML(reset):
               <About>
                 <Summary>Hello world!</Summary>
               </About>
+
+              <ModSettings>
+                <MsPerTick>''' + str(TIMERATE) + '''</MsPerTick>
+              </ModSettings>
               <ServerSection>
                 <ServerInitialConditions>
                  <Time>
@@ -309,7 +315,7 @@ for i in range(num_repeats):
     agent_hosts[0].sendCommand("chat /gamerule naturalRegeneration false")
 
     #ah = agent_hosts[i]
-    rewards.append(agents.run(agent_hosts[0], agent_hosts[1]))
+    rewards.append(agents.run(agent_hosts[0], agent_hosts[1], TIMERATE))
     cumulative_reward += rewards[-1]
 
     ws = agent_hosts[-1].getWorldState()
@@ -340,6 +346,6 @@ while not hasEnded:
 print("Cumulative Reward: ", cumulative_reward)
 print("All rewards:\n", rewards)
 
-with open('qtable.txt', 'w') as saveFile:
-    saveFile.write(json.dumps(agents.q_table))
-#print(agents.q_table)
+#with open('qtable.txt', 'w') as saveFile:
+#    saveFile.write(json.dumps(agents.q_table))
+
