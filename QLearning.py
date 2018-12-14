@@ -42,7 +42,7 @@ class TabQAgent(object):
 
         self.movementActions = ["move 0", "move 1", "move -1", "strafe 1", "strafe -1"]
         #self.turnSpeed = ["T","turn 0.5", "turn 1", "turn -0.5", "turn -1"]  #"turn 0","turn 0.5", "turn 1", "turn -0.5", "turn -1"
-        self.hotkeyChoice = ["hotbar.1 1", "hotbar.2 1"]
+        #self.hotkeyChoice = ["hotbar.1 1", "hotbar.2 1"]
         self.mouseAction = ["", "attack 1", "use 1"]
         #self.directions = ["setYaw 0", "setYaw 30", "setYaw 60", "setYaw 90", "setYaw 120"]
 
@@ -58,9 +58,9 @@ class TabQAgent(object):
         self.enemyLife = 20.0
 
 
-        self.actions = list(itertools.product(self.movementActions, self.hotkeyChoice, self.mouseAction)) #total number of actions: 140
+        self.actions1 = list(itertools.product(self.movementActions, ["hotbar.1 1", "hotbar.2 1"], self.mouseAction)) #total number of actions: 140
         self.actions2 = list(itertools.product(self.movementActions, ["hotbar.1 1"], self.mouseAction))
-        print("size of actions: ", len(self.actions2))
+        self.actions = self.actions1
         self.q_table = {}
         self.canvas = None
         self.root = None
@@ -187,10 +187,13 @@ class TabQAgent(object):
             #print(self.q_table[current_s])
             maxExp = max(self.q_table[current_s])
 
-            bestResults = []
+            bestResults = [i for i, x in enumerate(self.q_table[current_s]) if x == maxExp]
+
+            '''
             for i in range(len(self.actions)):
                 if self.q_table[current_s][i] == maxExp:
                     bestResults.append(i)
+            '''
             next_action = random.choice(bestResults)
 
             #print(self.actions[next_action])
@@ -242,6 +245,8 @@ class TabQAgent(object):
 
         self.prev_s = None
         self.prev_a = None
+        self.actions = self.actions1
+        self.playerDrankPotion = 0
 
         state1 = agent_host0.getWorldState()
 
@@ -271,12 +276,7 @@ class TabQAgent(object):
             for error in player_state.errors:
                 self.logger.error("Error: %s" % error.text)
 
-<<<<<<< HEAD
             if player_state.is_mission_running and len(player_state.observations) > 0 and len(enemy_state.observations) > 0 and not \
-=======
-            print("current_r ", current_r)
-            if player_state.is_mission_running and len(player_state.observations)>0 and len(enemy_state.observations)> 0 and not \
->>>>>>> 72dac71eda758c872914569ce622f296bad1d963
             player_state.observations[-1].text == "{}":
                 total_reward += self.act(player_state, player, current_r, enemy_state)
                 self.enemyAgentMoveRand(enemy)
