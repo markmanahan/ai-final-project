@@ -17,7 +17,7 @@ from collections import namedtuple
 #from operator import add
 #from random import *
 #import numpy as np
-import QLearning2
+import QLearning3
 import copy
 
 
@@ -148,7 +148,7 @@ def GenEnemyStart(x, z):
 pStart = {'x': 0, 'z': 2}
 eStart = {'x': 0, 'z': -1}
 
-TIMERATE = 10
+TIMERATE = 50
 
 
 def mazeCreator():
@@ -279,7 +279,7 @@ running = True
 current_pos = [(0,0) for x in range(NUM_AGENTS)]
 # When an agent is killed, it stops getting observations etc. Track this, so we know when to bail.
 my_mission = MalmoPython.MissionSpec(getXML("true"), True)
-agents = QLearning2.TabQAgent()
+agents = QLearning3.TabQAgent()
 
 
 
@@ -287,7 +287,7 @@ timed_out = False
 
 # Main mission loop
 
-num_repeats = 500
+num_repeats = 20
 cumulative_reward = 0
 rewards = []
 
@@ -295,10 +295,10 @@ rewards = []
 ###  Uncomment this section if you want to load from previous training ###
 
 try:
-    with open('qtableR.txt', 'r') as saveFile:
+    with open('qtableE.txt', 'r') as saveFile:
         print("loading qtable...\n\n")
         agents.q_table = json.loads(saveFile.read())
-        agents.enemyQ_table = copy.deepcopy(agents.q_table)
+        #agents.enemyQ_table = copy.deepcopy(agents.q_table)
 except:
     print("File not found\n")
     exit(1)
@@ -349,6 +349,6 @@ while not hasEnded:
 print("Cumulative Reward: ", cumulative_reward)
 print("All rewards:\n", rewards)
 
-with open('qtableE.txt', 'w') as saveFile:
-    saveFile.write(json.dumps(agents.q_table))
+#with open('qtableE.txt', 'w') as saveFile:
+#    saveFile.write(json.dumps(agents.q_table))
 

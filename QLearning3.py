@@ -204,32 +204,21 @@ class TabQAgent(object):
             bestResults = [i for i, x in enumerate(self.q_table[current_s]) if x == maxExp]
             next_action = random.choice(bestResults)
 
-        # Now for enemy action selction..
-        maxExp = max(self.enemyQ_table[current_enemys])
-        bestResults = [i for i, x in enumerate(self.enemyQ_table[current_enemys]) if x == maxExp]
-        next_enemyAction = random.choice(bestResults)
 
 
         # try to send the selected action to agent, only update prev_s if this succeeds
         agent_host.sendCommand(self.actions[next_action][0])
-        enemy.sendCommand(self.enemyactions[next_enemyAction][0])
 
-
-        enemy.sendCommand("turn " + str(enemyDifference))
         agent_host.sendCommand("turn " + str(difference))
 
         agent_host.sendCommand(self.actions[next_action][1])
-        enemy.sendCommand(self.enemyactions[next_enemyAction][1])
+
 
         if(self.actions[next_action][1] == "hotbar.1 1"):
             agent_host.sendCommand("hotbar.1 0")
         else:
             agent_host.sendCommand("hotbar.2 0")
 
-        if(self.enemyactions[next_enemyAction][1] == "hotbar.1 1"):
-            enemy.sendCommand("hotbar.1 0")
-        else:
-            enemy.sendCommand("hotbar.2 0")
 
         if(self.actions[next_action][2] == "attack 1"):
             agent_host.sendCommand("attack 0")
@@ -244,11 +233,6 @@ class TabQAgent(object):
         #    enemy.sendCommand("hotbar.1 0")
         #else:
         #    enemy.sendCommand("hotbar.2 0")
-
-        if(self.enemyactions[next_enemyAction][2] == "attack 1"):
-            enemy.sendCommand("attack 0")
-            enemy.sendCommand("use 0")
-        enemy.sendCommand(self.enemyactions[next_enemyAction][2])
 
 
 
